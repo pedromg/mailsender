@@ -1,0 +1,16 @@
+{
+	"servername": "",
+	"appname": "",
+	"secure": true,
+	"smtphost": "mailtrap.io",
+	"smtpport": 2525,
+	"smtpemail": "sender@example.com",
+	"smtpusername": "smtpusername123",
+	"smtppassword": "123456",
+	"emailaddress": "receiver@example.com", 
+	"subject": "subject line",
+	"body": "body text", 
+	"message": "message text",
+	"log": true, 
+	"logfile": "./files/mailsender_1.log"
+}

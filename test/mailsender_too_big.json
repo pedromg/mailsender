@@ -1,0 +1,96 @@
+{
+	"servername": "",
+	"appname": "",
+	"secure": true,
+	"smtphost": "mailtrap.io",
+	"smtpport": 2525,
+	"smtpemail": "sender@example.com",
+	"smtpusername": "smtpusername123",
+	"smtppassword": "123456",
+	"emailaddress": "receiver@example.com", 
+	"subject": "subject line",
+	"body": "body text", 
+	"message": "message text",
+	"log": true, 
+	"logfile": "./files/mailsender_1.log"
+}
+{
+	"servername": "",
+	"appname": "",
+	"secure": true,
+	"smtphost": "mailtrap.io",
+	"smtpport": 2525,
+	"smtpemail": "sender@example.com",
+	"smtpusername": "smtpusername123",
+	"smtppassword": "123456",
+	"emailaddress": "receiver@example.com", 
+	"subject": "subject line",
+	"body": "body text", 
+	"message": "message text",
+	"log": true, 
+	"logfile": "./files/mailsender_1.log"
+}
+{
+	"servername": "",
+	"appname": "",
+	"secure": true,
+	"smtphost": "mailtrap.io",
+	"smtpport": 2525,
+	"smtpemail": "sender@example.com",
+	"smtpusername": "smtpusername123",
+	"smtppassword": "123456",
+	"emailaddress": "receiver@example.com", 
+	"subject": "subject line",
+	"body": "body text", 
+	"message": "message text",
+	"log": true, 
+	"logfile": "./files/mailsender_1.log"
+}
+{
+	"servername": "",
+	"appname": "",
+	"secure": true,
+	"smtphost": "mailtrap.io",
+	"smtpport": 2525,
+	"smtpemail": "sender@example.com",
+	"smtpusername": "smtpusername123",
+	"smtppassword": "123456",
+	"emailaddress": "receiver@example.com", 
+	"subject": "subject line",
+	"body": "body text", 
+	"message": "message text",
+	"log": true, 
+	"logfile": "./files/mailsender_1.log"
+}
+{
+	"servername": "",
+	"appname": "",
+	"secure": true,
+	"smtphost": "mailtrap.io",
+	"smtpport": 2525,
+	"smtpemail": "sender@example.com",
+	"smtpusername": "smtpusername123",
+	"smtppassword": "123456",
+	"emailaddress": "receiver@example.com", 
+	"subject": "subject line",
+	"body": "body text", 
+	"message": "message text",
+	"log": true, 
+	"logfile": "./files/mailsender_1.log"
+}
+{
+	"server_name": "",
+	"app_name": "",
+	"secure": true,
+	"smtp_host": "mailtrap.io",
+	"smtp_port": 2525,
+	"smtp_email": "sender@example.com",
+	"smtp_username": "smtpusername123",
+	"smtp_password": "123456",
+	"email_address": "receiver@example.com", 
+	"subject": "subject line",
+	"body": "body text", 
+	"message": "message text",
+	"log": true, 
+	"log_file": "./files/mailsender_1.log"
+}
