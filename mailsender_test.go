@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"strings"
 	"testing"
+	"time"
 )
 
 const (
@@ -228,5 +231,114 @@ func TestLoadConfigs(t *testing.T) {
 				t.Errorf("Case %d error: Body should not be empty: %s", nr, configs.Body)
 			}
 		}
+	}
+}
+
+func TestLogLine(t *testing.T) {
+	type Case struct {
+		s   string
+		c   *Configs
+		res string
+	}
+
+	cases := []Case{
+		{
+			"",
+			&Configs{
+				ServerName: "",
+				AppName:    "",
+			},
+			"- " + "-",
+		},
+		{
+			"",
+			&Configs{
+				ServerName: "S",
+				AppName:    "A",
+			},
+			"S" + " - " + "A" + " -",
+		},
+		{
+			"Alpha Centauri",
+			&Configs{
+				ServerName: "S 1",
+				AppName:    "A 1",
+			},
+			"S 1" + " - " + "A 1" + " - " + "Alpha Centauri",
+		},
+	}
+
+	for n, c := range cases {
+		// first section is a time
+		strToParse := strings.Fields(c.c.logLine(c.s))[0]
+		_, err := time.Parse(time.RFC3339, strToParse)
+		if err != nil {
+			t.Errorf("Logline time parse error: %s > %s", strToParse, err)
+		}
+
+		// last section is the buils string
+		strRes := strings.Join(strings.Fields(c.res)[0:], " ")
+		if strRes != c.res {
+			t.Errorf("Case %d, logLine string error, should be [%s] was [%s]", n, c.res, strRes)
+		}
+
+	}
+
+}
+
+// TestLog logs files and evaluate size.
+// It uses the system TempDir.
+// For testing purposes the TempDir can be redefined.
+func TestLog(t *testing.T) {
+
+	type Case struct {
+		c    *Configs
+		size int64
+	}
+
+	cases := []Case{
+		{
+			&Configs{
+				LogFile: "test.log",
+			},
+			48,
+		},
+	}
+
+	for n, c := range cases {
+
+		filename := fmt.Sprintf("%s%s", os.TempDir(), c.c.LogFile)
+		c.c.LogFile = filename
+
+		err := c.c.logInit()
+		if err != nil {
+			t.Errorf("Case %d, initializing log error %s", n, err)
+		}
+
+		f, err := os.OpenFile(filename, os.O_RDONLY, 0444) // read, read permission
+		if err != nil {
+			t.Errorf("Case %d, File RFONLY open error: %s", n, err)
+		}
+
+		stat, err := f.Stat()
+		if err != nil {
+			t.Errorf("Case %d, Stat 0 file error: %s", n, err)
+		}
+
+		// log to the file
+		c.c.Logger.Printf("test case %d (b)", n)
+
+		stat, err = f.Stat()
+		if err != nil {
+			t.Errorf("Case %d, Stat 1 file error: %s", n, err)
+		}
+
+		if stat.Size() != c.size {
+			t.Errorf("Case %d size diff, [expected: %d] ::: [read: %d]", n, c.size, stat.Size())
+		}
+
+		// remove log for each iteration
+		os.Remove(f.Name())
+
 	}
 }

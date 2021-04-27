@@ -18,16 +18,17 @@ import (
 )
 
 var (
-	FileNotFound           = errors.New("File %s not Found")
-	FileTooLarge           = errors.New("File %s is too large")
-	FileIsDir              = errors.New("%s is a directory")
-	SubjectTextTooLarge    = errors.New("Subject message is too large")
-	BodyTextTooLarge       = errors.New("Body is too large")
-	MessageTextTooLarge    = errors.New("Message is too large")
-	ServerNameTextTooLarge = errors.New("Server name is too large")
-	AppNameTextTooLarge    = errors.New("App name is too large")
-	SMTPEmailAddressError  = errors.New("Invalid SMTP Email address")
-	EmailAddressError      = errors.New("Invalid Email address")
+	ErrFileNotFound           = errors.New("File %s not Found")
+	ErrFileTooLarge           = errors.New("File %s is too large")
+	ErrFileIsDir              = errors.New("%s is a directory")
+	ErrFileParse              = errors.New("Error marshaling JSON file: %s")
+	ErrSubjectTextTooLarge    = errors.New("Subject message is too large")
+	ErrBodyTextTooLarge       = errors.New("Body is too large")
+	ErrMessageTextTooLarge    = errors.New("Message is too large")
+	ErrServerNameTextTooLarge = errors.New("Server name is too large")
+	ErrAppNameTextTooLarge    = errors.New("App name is too large")
+	ErrSMTPEmailAddressError  = errors.New("Invalid SMTP Email address")
+	ErrEmailAddressError      = errors.New("Invalid Email address")
 )
 
 // Configs contains all the required config information
@@ -87,17 +88,21 @@ func (c *Configs) send() error {
 
 // logLine builds a detailed log line to be appended to log file
 func (c *Configs) logLine(s string) string {
-	return time.Now().String() + " " + c.ServerName + " - " + c.AppName + " - " + s + "\n"
+	t := time.Now().Format(time.RFC3339)
+	return t + " " + c.ServerName + " - " + c.AppName + " - " + s + "\n"
 }
 
-// log to the configs filename
-func (c *Configs) log(s string) error {
+// logInit initializes a logger.
+// func New(out io.Writer, prefix string, flag int) *Logger
+func (c *Configs) logInit() error {
 	fd, err := os.OpenFile(c.LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
-	if err == nil {
-		defer fd.Close()
-		_, err = fd.WriteString(c.logLine(s))
+	if err != nil {
+		return err
 	}
-	return err
+	// defer fd.Close()
+	c.Logger = log.New(fd, "MailSender: ", log.Ldate|log.Ltime)
+
+	return nil
 }
 
 // jsonToConfig populates the Config struct with data from the JSON file
@@ -108,7 +113,7 @@ func (c *Configs) fromJSON(data []byte) error {
 	tmp := Configs{}
 	err := json.Unmarshal(data, &tmp)
 	if err != nil {
-		return err
+		return fmt.Errorf(ErrFileParse.Error(), err)
 	}
 
 	if c.ServerName == "" {
@@ -172,40 +177,40 @@ func (c *Configs) validate() error {
 	// configs file
 	f, err := os.Stat(c.Configs)
 	if os.IsNotExist(err) {
-		return FileNotFound
+		return ErrFileNotFound
 	}
 	if f.Size() > 2000 {
-		return FileTooLarge
+		return ErrFileTooLarge
 	}
 	if f.IsDir() {
-		return fmt.Errorf(FileIsDir.Error(), f.Name())
+		return fmt.Errorf(ErrFileIsDir.Error(), f.Name())
 	}
 
 	// emails
 	_, err = mail.ParseAddress(c.SMTPEmail)
 	if err != nil {
-		return SMTPEmailAddressError
+		return ErrSMTPEmailAddressError
 	}
 	_, err = mail.ParseAddress(c.EmailAddress)
 	if err != nil {
-		return EmailAddressError
+		return ErrEmailAddressError
 	}
 
 	// text lengths
 	if len(c.ServerName) > 254 {
-		return ServerNameTextTooLarge
+		return ErrServerNameTextTooLarge
 	}
 	if len(c.AppName) > 254 {
-		return AppNameTextTooLarge
+		return ErrAppNameTextTooLarge
 	}
 	if len(c.Subject) > 254 {
-		return SubjectTextTooLarge
+		return ErrSubjectTextTooLarge
 	}
 	if len(c.Body) > 499 {
-		return BodyTextTooLarge
+		return ErrBodyTextTooLarge
 	}
 	if len(c.Message) > 499 {
-		return MessageTextTooLarge
+		return ErrMessageTextTooLarge
 	}
 
 	return nil
@@ -288,13 +293,12 @@ func main() {
 
 	// logger
 	if configs.Log {
-		fd, err := os.OpenFile(configs.LogFile, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0600)
+		err = configs.logInit()
 		if err != nil {
 			flag.PrintDefaults()
-			log.Fatalf("\n\nPlease check mailsender -help, there was an error creating the log file: %s", err)
+			log.Fatalf("Please check mailsender -help, there was an error creating log file: %s", err)
 		}
-		defer fd.Close()
-		configs.Logger = log.New(fd, "MailSender: ", log.Lshortfile)
+		configs.Logger.Print(configs.logLine("started"))
 	}
 
 	// send email
