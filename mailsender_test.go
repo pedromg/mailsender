@@ -10,11 +10,11 @@ import (
 
 const (
 	jsonFile = "./test/mailsender.json"
-	l100     = "...................................................................................................."
 )
 
 var (
-	l500 = fmt.Sprintf("%s%s%s%s%s", l100, l100, l100, l100, l100)
+	l100 = strings.Repeat(".", 100)
+	l500 = strings.Repeat(l100, 5)
 )
 
 func TestConfigValidate(t *testing.T) {
@@ -340,5 +340,75 @@ func TestLog(t *testing.T) {
 		// remove log for each iteration
 		os.Remove(f.Name())
 
+	}
+}
+
+func TestPrepare(t *testing.T) {
+
+	type Case struct {
+		n    int
+		c    *Configs
+		pass bool
+	}
+
+	cases := []Case{
+		{
+			1,
+			&Configs{
+				SMTPEmail:    "me@example.com",
+				EmailAddress: "you@example.com",
+				ServerName:   "LinuxBox",
+				AppName:      "App",
+				Subject:      "subject line",
+				Body:         "body text",
+			},
+			true,
+		},
+		{
+			2,
+			&Configs{
+				SMTPEmail:    "me@example.com",
+				EmailAddress: "you@example.com",
+			},
+			false, // lacks subject
+		},
+		{
+			2,
+			&Configs{
+				EmailAddress: "you@example.com",
+				Subject:      "subject line",
+			},
+			false, // lacks SMTPEmail
+		},
+	}
+
+	for n, c := range cases {
+		m := c.c.prepare()
+		// t.Log(m)
+		if m == "" {
+			t.Errorf("Case %d message diff", n)
+		}
+		switch {
+		case strings.Count(m, "Message-id") != 1:
+			t.Errorf("Case %d message lacks Message-id", n)
+		case strings.Count(m, "Date") != 1:
+			t.Errorf("Case %d message lacks Date", n)
+		case strings.Count(m, "Subject") != 1:
+			t.Errorf("Case %d message lacks Subject", n)
+		case strings.Count(m, "Content-Type") != 1:
+			t.Errorf("Case %d message lacks Content-Type", n)
+		case strings.Count(m, "Content-Transfer-Encoding") != 1:
+			t.Errorf("Case %d message lacks Content-Transfer-Encoding", n)
+		case strings.Count(m, "From") != 1:
+			t.Errorf("Case %d message lacks From", n)
+		case strings.Count(m, c.c.SMTPEmail) != 1:
+			if c.pass {
+				t.Errorf("Case %d message lacks SMTPEmail (%s)", n, c.c.SMTPEmail)
+			}
+		case strings.Count(m, c.c.Subject) != 1:
+			if c.pass {
+				t.Errorf("Case %d message lacks Subject (%s) ", n, c.c.Subject)
+			}
+		}
 	}
 }

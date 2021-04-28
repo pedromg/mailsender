@@ -12,6 +12,7 @@ import (
 	"net/smtp"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pedromg/goEncoderBase64"
@@ -32,6 +33,7 @@ var (
 )
 
 // Configs contains all the required config information
+// Logger is a custom log file using the internal log package
 type Configs struct {
 	Configs      string `json:"configs"`
 	ServerName   string `json:"server_name"`
@@ -52,7 +54,7 @@ type Configs struct {
 	Logger *log.Logger
 }
 
-func (c *Configs) senderEmail(msg string) error {
+func (c *Configs) send(msg string) error {
 	f := mail.Address{c.SMTPEmail, c.SMTPEmail}
 	t := mail.Address{c.EmailAddress, c.EmailAddress}
 
@@ -60,7 +62,7 @@ func (c *Configs) senderEmail(msg string) error {
 	return smtp.SendMail(c.SMTPHost+":"+strconv.Itoa(c.SMTPPort), auth, f.Address, []string{t.Address}, []byte(msg))
 }
 
-func (c *Configs) send() error {
+func (c *Configs) prepare() string {
 	startTime := time.Now()
 	header := make(map[string]string)
 	header["From"] = c.SMTPEmail
@@ -70,7 +72,7 @@ func (c *Configs) send() error {
 		"==@" + c.SMTPHost + ">"
 	header["Message-id"] = theMesgID
 	header["Date"] = startTime.Format("Mon, 02 Jan 2006 15:04:05 +0000")
-	header["Subject"] = "mailsender Alert for " + c.Subject
+	header["Subject"] = c.Subject
 	header["MIME-Version"] = "1.0"
 	header["Content-Type"] = "text/plain; charset=\"utf-8\""
 	header["Content-Transfer-Encoding"] = "base64"
@@ -83,13 +85,13 @@ func (c *Configs) send() error {
 	msg += "\r\n"
 	msg += goEncoderBase64.Base64MimeEncoder(body)
 
-	return c.senderEmail(msg)
+	return msg
 }
 
 // logLine builds a detailed log line to be appended to log file
-func (c *Configs) logLine(s string) string {
+func (c *Configs) logLine(s ...string) string {
 	t := time.Now().Format(time.RFC3339)
-	return t + " " + c.ServerName + " - " + c.AppName + " - " + s + "\n"
+	return t + " " + c.ServerName + " - " + c.AppName + " - " + strings.Join(s, " ") + "\n"
 }
 
 // logInit initializes a logger.
@@ -302,7 +304,13 @@ func main() {
 	}
 
 	// send email
+	err = configs.send(configs.prepare())
+	if err != nil {
+		configs.Logger.Print(configs.logLine("Error sending email ", err.Error()))
+		log.Fatalf("Sending mail error: %s", err)
 
+	}
 	// log
+	configs.Logger.Print(configs.logLine("Send OK"))
 
 }
