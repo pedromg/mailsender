@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/smtp"
 	"os"
 	"strings"
 	"testing"
@@ -411,4 +412,47 @@ func TestPrepare(t *testing.T) {
 			}
 		}
 	}
+}
+
+// fakeSend has the same signature of the smtp.SendMail()
+func fakeSend(addr string, a smtp.Auth, from string, to []string, msg []byte) error {
+	return nil
+}
+
+func TestSend(t *testing.T) {
+
+	type Case struct {
+		n    int
+		s    *emailSender
+		pass bool
+	}
+
+	cases := []Case{
+		{
+			1,
+			&emailSender{
+				c: &Configs{
+					SMTPHost:     "localhost",
+					SMTPPort:     25,
+					SMTPEmail:    "me@example.com",
+					SMTPUsername: "me",
+					SMTPPassword: "pass",
+					EmailAddress: "you@example.com",
+					ServerName:   "LinuxBox",
+					AppName:      "App",
+					Subject:      "subject line",
+					Body:         "body text",
+				},
+				send: fakeSend,
+			},
+			true,
+		},
+	}
+
+	for n, c := range cases {
+		if err := c.s.sendIt(c.s.c.prepare()); err != nil {
+			t.Errorf("Case %d send error %s ", n, err)
+		}
+	}
+
 }

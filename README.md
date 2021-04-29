@@ -64,6 +64,10 @@ $ mailsender -p /path/to/file -f filename.json
 -	__log__: (bool) log ?
 -	__log_file__: (string) # file to append the log.
 
+### Tests
+
+For testing purposes, one can define a fake smtp.SendMail function. 
+
 ### Cross Compile
 
 If you are building on OSX for Linux usage, make sure your Go e prepared to generate binaries for other architectures. To enable it for Linux:

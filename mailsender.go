@@ -18,6 +18,14 @@ import (
 	"github.com/pedromg/goEncoderBase64"
 )
 
+// emailSender is a type that includes the configs and the send function.
+// This type is used both in the main code for sending with the smtp.SendMail function
+// and a fakeSend mail in tests.
+type emailSender struct {
+	c    *Configs
+	send func(string, smtp.Auth, string, []string, []byte) error
+}
+
 var (
 	ErrFileNotFound           = errors.New("File %s not Found")
 	ErrFileTooLarge           = errors.New("File %s is too large")
@@ -30,6 +38,7 @@ var (
 	ErrAppNameTextTooLarge    = errors.New("App name is too large")
 	ErrSMTPEmailAddressError  = errors.New("Invalid SMTP Email address")
 	ErrEmailAddressError      = errors.New("Invalid Email address")
+	ErrSend                   = errors.New("Mail send error: %s")
 )
 
 // Configs contains all the required config information
@@ -54,14 +63,17 @@ type Configs struct {
 	Logger *log.Logger
 }
 
-func (c *Configs) send(msg string) error {
-	f := mail.Address{c.SMTPEmail, c.SMTPEmail}
-	t := mail.Address{c.EmailAddress, c.EmailAddress}
+// sendIt sends the email. It can be tested using a fake function call set
+// in e.send field.
+func (e *emailSender) sendIt(msg string) error {
+	f := mail.Address{e.c.SMTPEmail, e.c.SMTPEmail}
+	t := mail.Address{e.c.EmailAddress, e.c.EmailAddress}
 
-	auth := smtp.PlainAuth("", c.SMTPUsername, c.SMTPPassword, c.SMTPHost)
-	return smtp.SendMail(c.SMTPHost+":"+strconv.Itoa(c.SMTPPort), auth, f.Address, []string{t.Address}, []byte(msg))
+	auth := smtp.PlainAuth("", e.c.SMTPUsername, e.c.SMTPPassword, e.c.SMTPHost)
+	return e.send(e.c.SMTPHost+":"+strconv.Itoa(e.c.SMTPPort), auth, f.Address, []string{t.Address}, []byte(msg))
 }
 
+// prepare prepares the email parts to be sent, headers, id, content-types, etc.
 func (c *Configs) prepare() string {
 	startTime := time.Now()
 	header := make(map[string]string)
@@ -303,12 +315,15 @@ func main() {
 		configs.Logger.Print(configs.logLine("started"))
 	}
 
-	// send email
-	err = configs.send(configs.prepare())
+	// send email using the custom function to the smtp.SendMail
+	e := &emailSender{
+		c:    configs,
+		send: smtp.SendMail,
+	}
+	err = e.sendIt(configs.prepare())
 	if err != nil {
 		configs.Logger.Print(configs.logLine("Error sending email ", err.Error()))
-		log.Fatalf("Sending mail error: %s", err)
-
+		log.Fatalf(ErrSend.Error(), err)
 	}
 	// log
 	configs.Logger.Print(configs.logLine("Send OK"))
