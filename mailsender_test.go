@@ -319,7 +319,7 @@ func TestLog(t *testing.T) {
 			}
 			defer os.RemoveAll(tmp)
 		}
-		filename := fmt.Sprintf("%s%s", tmp, c.c.LogFile)
+		filename := fmt.Sprintf("%s/%s", tmp, c.c.LogFile)
 		c.c.LogFile = filename
 
 		err = c.c.logInit()
