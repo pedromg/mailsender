@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/pedromg/mailsender.svg?branch=master)](https://travis-ci.org/pedromg/mailsender)
+[![Build Status](https://travis-ci.com/pedromg/mailsender.svg?branch=main)](https://travis-ci.com/pedromg/mailsender)
 mailsender
 =========
 
