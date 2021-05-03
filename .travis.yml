@@ -1,5 +1,5 @@
 language: go
-script: go get github.com/pedromg/mailsender && go test
+script: go get github.com/pedromg/mailsender && go test -v ./...
 notifications:
   email:
     recipients:
