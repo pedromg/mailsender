@@ -308,10 +308,21 @@ func TestLog(t *testing.T) {
 
 	for n, c := range cases {
 
-		filename := fmt.Sprintf("%s%s", os.TempDir(), c.c.LogFile)
+		var err error
+		// if tmp dir does not exist (example Travis-CI) we
+		// need to create one inside the project path
+		tmp := os.TempDir()
+		if tmp == "" {
+			tmp, err = os.MkdirTemp("", "mailsender")
+			if err != nil {
+				t.Errorf("Case %d, could not create TMP dir, error: %s", n, err)
+			}
+			defer os.RemoveAll(tmp)
+		}
+		filename := fmt.Sprintf("%s%s", tmp, c.c.LogFile)
 		c.c.LogFile = filename
 
-		err := c.c.logInit()
+		err = c.c.logInit()
 		if err != nil {
 			t.Errorf("Case %d, initializing log error %s", n, err)
 		}
