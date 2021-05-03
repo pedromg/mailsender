@@ -88,14 +88,12 @@ func (c *Configs) prepare() string {
 	header["MIME-Version"] = "1.0"
 	header["Content-Type"] = "text/plain; charset=\"utf-8\""
 	header["Content-Transfer-Encoding"] = "base64"
-	body := "++ mailsender ALERT ++ \n\n "
-	body += fmt.Sprintf(c.Body, c.Message)
 	msg := ""
 	for k, v := range header {
 		msg += fmt.Sprintf("%s: %s\r\n", k, v)
 	}
 	msg += "\r\n"
-	msg += goEncoderBase64.Base64MimeEncoder(body)
+	msg += goEncoderBase64.Base64MimeEncoder(c.Body)
 
 	return msg
 }
@@ -154,6 +152,9 @@ func (c *Configs) fromJSON(data []byte) error {
 	if c.EmailAddress == "" {
 		c.EmailAddress = tmp.EmailAddress
 	}
+	if c.Message == "" {
+		c.Message = tmp.Message
+	}
 	if c.Subject == "" {
 		c.Subject = tmp.Subject
 	}
@@ -163,8 +164,21 @@ func (c *Configs) fromJSON(data []byte) error {
 	if c.Body == "" {
 		c.Body = tmp.Body
 	}
+	switch c.Body == "" {
+	case true:
+		switch c.Message == "" {
+		case true:
+			c.Body = fmt.Sprintf("Server: %s\nApplication: %s", c.ServerName, c.AppName)
+		case false:
+			c.Body = fmt.Sprintf("Server: %s\nApplication: %s\n\nMessage: %s", c.ServerName, c.AppName, c.Message)
+		}
+	case false:
+		if c.Message != "" {
+			// in this case the user may have added a %s to the body template for the message
+			c.Body = fmt.Sprintf(c.Body, c.Message)
+		}
+	}
 	if c.Body == "" {
-		c.Body = fmt.Sprintf("%s\n%s\n\n%s", c.ServerName, c.AppName, c.Message)
 	}
 	if c.LogFile == "" {
 		c.LogFile = tmp.LogFile
@@ -263,15 +277,15 @@ func main() {
 	flag.StringVar(&flagSMTPPassword, "pass", "", "SMTP password")
 	flag.StringVar(&flagEmailAddress, "to", "", "destination email address")
 	flag.StringVar(&flagSubject, "subject", "", "email subject")
-	flag.StringVar(&flagBody, "", "", "email body template, accepts %s")
-	flag.StringVar(&flagMessage, "", "", "message passed for the body template")
+	flag.StringVar(&flagBody, "body", "", "email body template, accepts %s")
+	flag.StringVar(&flagMessage, "message", "", "message passed for the body template")
 	flag.BoolVar(&flagLog, "log", true, "log to file")
-	flag.StringVar(&flagLogFile, "logfile", "./mailsender.log", "/path/to/log/filename")
+	flag.StringVar(&flagLogFile, "logfile", "", "/path/to/log/filename default location is ./mailsender.log")
 
 	flag.Parse()
 
 	if flagHelp {
-		flag.PrintDefaults()
+		flag.Usage() //flag.PrintDefaults()
 		os.Exit(0)
 	}
 
@@ -297,7 +311,7 @@ func main() {
 	err := configs.load(configs.Configs)
 	if err != nil {
 		flag.PrintDefaults()
-		log.Fatalf("\n\nPlease check mailsender -help, there was an error loading JSON data: %s", err)
+		log.Fatalf("Please check mailsender -help, there was an error loading JSON data: %s", err)
 	}
 
 	if err := configs.validate(); err != nil {
@@ -322,10 +336,14 @@ func main() {
 	}
 	err = e.sendIt(configs.prepare())
 	if err != nil {
-		configs.Logger.Print(configs.logLine("Error sending email ", err.Error()))
+		if configs.Log {
+			configs.Logger.Print(configs.logLine("Error sending email ", err.Error()))
+		}
 		log.Fatalf(ErrSend.Error(), err)
 	}
 	// log
-	configs.Logger.Print(configs.logLine("Send OK"))
+	if configs.Log {
+		configs.Logger.Print(configs.logLine("Send OK"))
+	}
 
 }
